@@ -1,5 +1,6 @@
 package com.example.biblepaceproject.ui
 
+import android.app.Activity
 import android.app.Application
 import android.util.Log
 import androidx.compose.runtime.getValue
@@ -9,17 +10,36 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.biblepaceproject.data.BibleRepository
 import com.example.biblepaceproject.data.BibleVersion
+import androidx.credentials.exceptions.GetCredentialCancellationException
 import com.example.biblepaceproject.data.AppDatabase
+import com.example.biblepaceproject.data.AuthManager
+import com.example.biblepaceproject.data.FirestoreReadStore
 import com.example.biblepaceproject.data.BookCatalog
 import com.example.biblepaceproject.data.ChapterId
 import com.example.biblepaceproject.data.ProgressRepository
 import com.example.biblepaceproject.data.ReaderPrefs
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 enum class Screen { Reader, Books }
+
+enum class SyncStatus { Idle, Syncing, Synced, Failed }
+
+data class AccountState(
+    /** False in builds without google-services.json: the app works fully offline and hides all account UI. */
+    val configured: Boolean = false,
+    val signedIn: Boolean = false,
+    val email: String? = null,
+    val status: SyncStatus = SyncStatus.Idle,
+    val message: String? = null,
+    val busy: Boolean = false,
+    val nudgeDismissed: Boolean = false,
+) {
+    val showNudge: Boolean get() = configured && !signedIn && !nudgeDismissed
+}
 
 data class ReaderState(
     val versions: List<BibleVersion> = emptyList(),
@@ -31,6 +51,7 @@ data class ReaderState(
     val error: String? = null,
     val readChapters: Set<String> = emptySet(),
     val screen: Screen = Screen.Reader,
+    val account: AccountState = AccountState(),
 ) {
     val bookName: String get() = BookCatalog.book(book).name
     val version: BibleVersion? get() = versions.firstOrNull { it.id == versionId }
@@ -43,7 +64,11 @@ class ReaderViewModel(app: Application) : AndroidViewModel(app) {
     private val repository = BibleRepository(app)
     private val prefs = ReaderPrefs(app)
     private val progress = ProgressRepository(AppDatabase.get(app).chapterReadDao())
+    private val auth = AuthManager(app)
     private var loadJob: Job? = null
+    private var syncJob: Job? = null
+    private var resync = false
+    private var uid: String? = null
 
     var state by mutableStateOf(ReaderState())
         private set
@@ -53,8 +78,18 @@ class ReaderViewModel(app: Application) : AndroidViewModel(app) {
         val versionId = prefs.versionId.takeIf { id -> versions.any { it.id == id } } ?: versions.first().id
         val book = prefs.book
         val chapter = prefs.chapter.coerceIn(1, BookCatalog.book(book).chapters)
-        state = state.copy(versions = versions, versionId = versionId, book = book, chapter = chapter)
+        state = state.copy(
+            versions = versions, versionId = versionId, book = book, chapter = chapter,
+            account = AccountState(configured = auth.isConfigured, nudgeDismissed = prefs.nudgeDismissed),
+        )
         load()
+        viewModelScope.launch {
+            auth.user().collect { user ->
+                uid = user?.uid
+                setAccount { copy(signedIn = user != null, email = user?.email, status = SyncStatus.Idle, message = null) }
+                requestSync()
+            }
+        }
         viewModelScope.launch {
             if (!prefs.legacyImported) {
                 progress.importLegacy(prefs.legacyReadChapters)
@@ -93,7 +128,82 @@ class ReaderViewModel(app: Application) : AndroidViewModel(app) {
     fun toggleRead() {
         val (book, chapter, versionId) = Triple(state.book, state.chapter, state.versionId)
         val markRead = !state.isChapterRead
-        viewModelScope.launch { progress.setRead(book, chapter, markRead, versionId) }
+        viewModelScope.launch {
+            progress.setRead(book, chapter, markRead, versionId)
+            requestSync()
+        }
+    }
+
+    fun dismissNudge() {
+        prefs.nudgeDismissed = true
+        setAccount { copy(nudgeDismissed = true) }
+    }
+
+    fun signIn(activity: Activity) {
+        viewModelScope.launch {
+            setAccount { copy(busy = true, message = null) }
+            try {
+                auth.signIn(activity) // the auth listener above kicks off the first sync
+            } catch (_: GetCredentialCancellationException) {
+                // The person closed the Google sheet; nothing to report.
+            } catch (e: Exception) {
+                Log.e(TAG, "Sign-in failed", e)
+                setAccount { copy(message = "Couldn't sign in. Check your connection and try again.") }
+            } finally {
+                setAccount { copy(busy = false) }
+            }
+        }
+    }
+
+    /** Signing out wipes this device's copy, so first make certain everything is safely in the cloud. */
+    fun signOut() {
+        val current = uid ?: return
+        viewModelScope.launch {
+            setAccount { copy(busy = true, message = null) }
+            try {
+                syncJob?.join()
+                prefs.setSyncCursor(current, progress.sync(FirestoreReadStore(current), prefs.syncCursor(current)))
+                check(!progress.hasUnsynced())
+                auth.signOut()
+                progress.clearAll()
+                prefs.clearSyncCursor(current)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "Sign-out blocked", e)
+                setAccount { copy(message = "Can't sign out yet: your latest progress hasn't reached the cloud. Connect to the internet and try again.") }
+            } finally {
+                setAccount { copy(busy = false) }
+            }
+        }
+    }
+
+    /** Runs one sync at a time; a request made mid-sync triggers exactly one more pass afterwards. No-op when signed out. */
+    fun requestSync() {
+        val current = uid ?: return
+        if (syncJob?.isActive == true) {
+            resync = true
+            return
+        }
+        syncJob = viewModelScope.launch {
+            do {
+                resync = false
+                setAccount { copy(status = SyncStatus.Syncing, message = null) }
+                try {
+                    prefs.setSyncCursor(current, progress.sync(FirestoreReadStore(current), prefs.syncCursor(current)))
+                    setAccount { copy(status = SyncStatus.Synced) }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "Sync failed", e)
+                    setAccount { copy(status = SyncStatus.Failed, message = "Couldn't reach the cloud. Your progress is safe on this phone and will sync later.") }
+                }
+            } while (resync)
+        }
+    }
+
+    private fun setAccount(change: AccountState.() -> AccountState) {
+        state = state.copy(account = state.account.change())
     }
 
     fun showBooks() {
@@ -134,4 +244,8 @@ data class ReaderActions(
     val onNext: () -> Unit = {},
     val onPrevious: () -> Unit = {},
     val onToggleRead: () -> Unit = {},
+    val onSignIn: () -> Unit = {},
+    val onSignOut: () -> Unit = {},
+    val onSyncNow: () -> Unit = {},
+    val onDismissNudge: () -> Unit = {},
 )

@@ -1,5 +1,6 @@
 package com.example.biblepaceproject.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,7 +9,19 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -42,7 +55,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.BaselineShift
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -52,6 +64,7 @@ import com.example.biblepaceproject.data.BookCatalog
 @Composable
 fun ReaderScreen(state: ReaderState, actions: ReaderActions) {
     var showVersions by remember { mutableStateOf(false) }
+    var showAccount by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -59,7 +72,16 @@ fun ReaderScreen(state: ReaderState, actions: ReaderActions) {
                 CenterAlignedTopAppBar(
                     title = {
                         TextButton(onClick = actions.onShowBooks) {
-                            Text("${state.bookName} ${state.chapter}  ▾", style = MaterialTheme.typography.titleLarge)
+                            Text("${state.bookName} ${state.chapter}", style = MaterialTheme.typography.titleLarge)
+                            Icon(Icons.Filled.ArrowDropDown, contentDescription = "Open the library")
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { showAccount = true }) {
+                            Icon(
+                                if (state.account.signedIn) Icons.Filled.AccountCircle else Icons.Outlined.AccountCircle,
+                                contentDescription = "Account and backup",
+                            )
                         }
                     },
                     actions = {
@@ -75,6 +97,20 @@ fun ReaderScreen(state: ReaderState, actions: ReaderActions) {
                     color = MaterialTheme.colorScheme.secondary,
                     trackColor = MaterialTheme.colorScheme.outlineVariant,
                 )
+                if (state.account.showNudge) {
+                    Surface(color = MaterialTheme.colorScheme.primaryContainer) {
+                        Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                "Keep your progress safe if you change phones or reinstall.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.weight(1f).padding(vertical = 8.dp),
+                            )
+                            TextButton(onClick = { showAccount = true }) { Text("Sign in") }
+                            TextButton(onClick = actions.onDismissNudge) { Text("Not now") }
+                        }
+                    }
+                }
             }
         },
         bottomBar = { ChapterBar(state, actions) },
@@ -87,6 +123,8 @@ fun ReaderScreen(state: ReaderState, actions: ReaderActions) {
             }
         }
     }
+
+    if (showAccount) AccountSheet(state.account, actions, onDismiss = { showAccount = false })
 
     if (showVersions) {
         VersionSheet(
@@ -114,7 +152,7 @@ private fun ChapterText(state: ReaderState) {
             Column(Modifier.fillMaxWidth().padding(bottom = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(state.bookName.uppercase(), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
                 Text("Chapter ${state.chapter}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.tertiary)
-                Text("❦", fontSize = 22.sp, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(top = 8.dp))
+                Ornament(Modifier.padding(top = 12.dp))
             }
         }
         // Some versions leave a verse empty on purpose (e.g. Matthew 17:21 in the ASV, where manuscripts differ). Skip it but keep numbering.
@@ -129,15 +167,15 @@ private fun ChapterText(state: ReaderState) {
             Text(verse, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground)
         }
         item(key = "footer") {
-            Text(
-                "❦",
-                fontSize = 22.sp,
-                color = MaterialTheme.colorScheme.secondary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-            )
+            Box(Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) { Ornament() }
         }
     }
+}
+
+/** A short gilt rule, used as a quiet chapter ornament. */
+@Composable
+private fun Ornament(modifier: Modifier = Modifier) {
+    Box(modifier.width(48.dp).height(2.dp).background(MaterialTheme.colorScheme.secondary))
 }
 
 @Composable
@@ -150,13 +188,16 @@ private fun ChapterBar(state: ReaderState, actions: ReaderActions) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                OutlinedButton(onClick = actions.onPrevious, enabled = state.hasPrevious, modifier = Modifier.semantics { contentDescription = "Previous chapter" }) { Text("‹") }
+                OutlinedButton(onClick = actions.onPrevious, enabled = state.hasPrevious, modifier = Modifier.semantics { contentDescription = "Previous chapter" }) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null) }
                 if (state.isChapterRead) {
-                    OutlinedButton(onClick = actions.onToggleRead) { Text("✓ Read") }
+                    OutlinedButton(onClick = actions.onToggleRead) {
+                        Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Text("Read", modifier = Modifier.padding(start = 6.dp))
+                    }
                 } else {
                     Button(onClick = actions.onToggleRead) { Text("Mark as read") }
                 }
-                OutlinedButton(onClick = actions.onNext, enabled = state.hasNext, modifier = Modifier.semantics { contentDescription = "Next chapter" }) { Text("›") }
+                OutlinedButton(onClick = actions.onNext, enabled = state.hasNext, modifier = Modifier.semantics { contentDescription = "Next chapter" }) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) }
             }
         }
     }

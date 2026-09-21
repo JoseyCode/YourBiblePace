@@ -28,6 +28,7 @@ users/{uid}/reads/{chapterId}        (one document per chapter, at most 1,189 pe
     readDay         string?  the user's LOCAL calendar day, "2026-09-21". Keeps late-night reading on the right day
     version         string?  Bible version being read, e.g. "kjv". Informational only
     updatedAt       number   epoch millis (UTC) of the last change to this document. Drives conflict resolution
+    serverUpdatedAt timestamp set by Firestore (server clock) on every write. Only used as the sync cursor, never for conflicts
     deleted         boolean  true = the user un-marked it (a tombstone)
     schemaVersion   number   1
 ```
@@ -43,6 +44,23 @@ users/{uid}/reads/{chapterId}        (one document per chapter, at most 1,189 pe
 - **Client timestamps** (epoch millis). Good enough for two people. A phone with a badly wrong clock could win a conflict
   it shouldn't; acceptable for now.
 
+### Sync
+`ProgressRepository.sync`, one pass, run on app start, after every tap, on sign-in and on "Sync now":
+1. **Pull** documents with `serverUpdatedAt` after the saved cursor (minus a 5 second overlap), so a normal sync reads only what changed
+   instead of all 1,189 documents. First sync on a device reads everything once.
+2. **Merge** each pulled document into Room with the rule below.
+3. **Push** every row still flagged `dirty`, then clear the flag only if the row hasn't changed in the meantime.
+Offline or failed: nothing is lost, rows stay dirty and the next pass retries. Firestore's own offline disk cache is switched off
+on purpose; Room is the offline store, so a stale write can't be replayed later over newer data.
+
+Known, accepted race: two devices changing the very same chapter within the seconds between one device's pull and push can lose the
+older change. For a personal app this is negligible. The fix if it ever matters is to push inside a Firestore transaction.
+
+### Signing out
+Sign-out first syncs, refuses if anything is still unsynced, then wipes the local copy. This stops the next person to sign in on the same
+phone from inheriting (and uploading) someone else's progress. Progress made while signed out is treated as the first account's: it merges
+into whichever account signs in first.
+
 ### Merge rule (same chapter on two devices)
 Higher `updatedAt` wins. On an exact tie, the non-deleted (read) copy wins. See `ChapterMerge.kt`.
 
@@ -57,6 +75,10 @@ service cloud.firestore {
   }
 }
 ```
+
+### Account deletion
+Google Play requires apps that let people create an account to also let them delete it. Before publishing, add an in-app "Delete my data"
+that deletes `users/{uid}/reads/*` and the Firebase Auth user. Not built yet.
 
 ### Rules for changing this later
 - Adding a field: add it as optional, no migration.

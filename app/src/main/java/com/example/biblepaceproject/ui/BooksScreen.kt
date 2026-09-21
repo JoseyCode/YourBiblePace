@@ -16,13 +16,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,7 +51,9 @@ fun BooksScreen(state: ReaderState, actions: ReaderActions) {
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("The Library", style = MaterialTheme.typography.titleLarge) },
-                navigationIcon = { TextButton(onClick = actions.onShowReader) { Text("‹ Back") } },
+                navigationIcon = {
+                    IconButton(onClick = actions.onShowReader) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back to reading") }
+                },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
             )
         },

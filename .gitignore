@@ -74,3 +74,15 @@ Thumbs.db
 desktop.ini
 *~
 *.swp
+
+# ====================================================================
+# Built APKs (see tools/build-apk.sh)
+# ====================================================================
+/builds/
+
+# Regenerable logo renders (branding/make_logo.py, branding/export_android.py). SVGs and the Play Store image stay tracked.
+branding/preview*.png
+branding/ybp-a-*.png
+branding/ybp-b-*.png
+branding/ybp-c-*.png
+__pycache__/
