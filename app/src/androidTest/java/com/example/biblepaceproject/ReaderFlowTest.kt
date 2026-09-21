@@ -2,6 +2,7 @@ package com.example.biblepaceproject
 
 import android.content.Context
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ActivityScenario
@@ -57,7 +58,7 @@ class ReaderFlowTest {
     @Test
     fun nextChapterAdvances() {
         waitForText("Genesis 1")
-        compose.onNodeWithText("›").performClick()
+        compose.onNodeWithContentDescription("Next chapter").performClick()
         waitForText("Genesis 2")
     }
 }

@@ -16,6 +16,11 @@ import com.example.biblepaceproject.ui.theme.BiblePaceProjectTheme
 class MainActivity : ComponentActivity() {
     private val viewModel: ReaderViewModel by viewModels()
 
+    override fun onStart() {
+        super.onStart()
+        viewModel.requestSync()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -30,6 +35,10 @@ class MainActivity : ComponentActivity() {
                     onNext = viewModel::next,
                     onPrevious = viewModel::previous,
                     onToggleRead = viewModel::toggleRead,
+                    onSignIn = { viewModel.signIn(this@MainActivity) },
+                    onSignOut = viewModel::signOut,
+                    onSyncNow = viewModel::requestSync,
+                    onDismissNudge = viewModel::dismissNudge,
                 )
                 BackHandler(enabled = state.screen == Screen.Books) { viewModel.showReader() }
                 when (state.screen) {

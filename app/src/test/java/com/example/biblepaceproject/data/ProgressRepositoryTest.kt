@@ -1,24 +1,12 @@
 package com.example.biblepaceproject.data
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-
-private class FakeDao : ChapterReadDao {
-    val rows = MutableStateFlow<Map<String, ChapterRead>>(emptyMap())
-    override fun observeReadIds(): Flow<List<String>> = rows.map { m -> m.values.filter { !it.deleted }.map { it.id } }
-    override suspend fun get(id: String) = rows.value[id]
-    override suspend fun dirtyRows() = rows.value.values.filter { it.dirty }
-    override suspend fun upsert(row: ChapterRead) { rows.value = rows.value + (row.id to row) }
-    override suspend fun upsertAll(rows: List<ChapterRead>) = rows.forEach { upsert(it) }
-}
 
 class ProgressRepositoryTest {
     private var clock = 1_000L

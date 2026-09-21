@@ -23,4 +23,11 @@ interface ChapterReadDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(rows: List<ChapterRead>)
+
+    /** Marks a row uploaded, but only if it hasn't changed since it was read for upload (so a tap made mid-sync isn't lost). */
+    @Query("UPDATE chapter_reads SET dirty = 0 WHERE id = :id AND updatedAt = :updatedAt")
+    suspend fun markClean(id: String, updatedAt: Long)
+
+    @Query("DELETE FROM chapter_reads")
+    suspend fun deleteAll()
 }

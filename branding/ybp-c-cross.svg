@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="108" height="108">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5A3A22"/><stop offset="1" stop-color="#3A2415"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#DDB65C"/><stop offset="1" stop-color="#A57628"/>
+    </linearGradient>
+    <linearGradient id="pageL" x1="1" y1="0" x2="0" y2="0">
+      <stop offset="0" stop-color="#E3D3B4"/><stop offset="0.35" stop-color="#F6EEDF"/><stop offset="1" stop-color="#F6EEDF"/>
+    </linearGradient>
+    <linearGradient id="pageR" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#E3D3B4"/><stop offset="0.35" stop-color="#F6EEDF"/><stop offset="1" stop-color="#F6EEDF"/>
+    </linearGradient>
+  </defs>
+  <rect width="108" height="108" fill="url(#bg)"/><g transform="translate(54 54) scale(0.93) translate(-55.2 -54.2)">
+  <!-- page block peeking out to the right and bottom -->
+  <rect x="35.4" y="27.4" width="42" height="56" rx="4.5" fill="#F6EEDF"/>
+  <!-- cover -->
+  <rect x="33" y="25" width="42" height="56" rx="4.5" fill="url(#gold)"/>
+  <!-- spine -->
+  <path d="M37.5,25 h1.5 v56 h-1.5 a4.5,4.5 0 0 1 -4.5,-4.5 v-47 a4.5,4.5 0 0 1 4.5,-4.5 Z" fill="#3E2716" opacity="0.35"/>
+  <path d="M39,25 v56" stroke="#3E2716" stroke-width="0.6" opacity="0.45"/>
+  <!-- inset border -->
+  <rect x="41.6" y="28" width="30.4" height="50" rx="1.6" fill="none" stroke="#3E2716" stroke-width="0.7" opacity="0.55"/>
+  <g fill="#DDB65C" opacity="0.75" transform="translate(0.55 0.55)"><rect x="54.5" y="40.5" width="5.0" height="25.0" rx="0.9"/><rect x="49.0" y="47.7" width="16.0" height="5.0" rx="0.9"/></g><g fill="#3E2716" opacity="1" transform="translate(0 0)"><rect x="54.5" y="40.5" width="5.0" height="25.0" rx="0.9"/><rect x="49.0" y="47.7" width="16.0" height="5.0" rx="0.9"/></g>
+</g>
+</svg>

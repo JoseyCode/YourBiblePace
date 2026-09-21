@@ -27,12 +27,24 @@ class ReaderPrefs(context: Context) {
         get() = prefs.getBoolean(KEY_LEGACY_IMPORTED, false)
         set(value) = prefs.edit { putBoolean(KEY_LEGACY_IMPORTED, value) }
 
+    /** How far we've pulled from the cloud, per account (epoch millis of the newest server change seen). */
+    fun syncCursor(uid: String): Long = prefs.getLong("cursor_$uid", 0L)
+
+    fun setSyncCursor(uid: String, value: Long) = prefs.edit { putLong("cursor_$uid", value) }
+
+    fun clearSyncCursor(uid: String) = prefs.edit { remove("cursor_$uid") }
+
+    var nudgeDismissed: Boolean
+        get() = prefs.getBoolean(KEY_NUDGE_DISMISSED, false)
+        set(value) = prefs.edit { putBoolean(KEY_NUDGE_DISMISSED, value) }
+
     companion object {
         const val DEFAULT_VERSION = "kjv"
         private const val KEY_VERSION = "version"
         private const val KEY_BOOK = "book"
         private const val KEY_CHAPTER = "chapter"
         private const val KEY_READ = "read"
+        private const val KEY_NUDGE_DISMISSED = "nudge_dismissed"
         private const val KEY_LEGACY_IMPORTED = "legacy_imported"
     }
 }
