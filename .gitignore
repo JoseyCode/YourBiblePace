@@ -1,0 +1,76 @@
+# ====================================================================
+# Android & Gradle Build Artifacts
+# ====================================================================
+.gradle/
+build/
+**/build/
+.kotlin/
+output-metadata.json
+
+# Built packages & binaries
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+
+# Gradle wrapper (ensure JAR is preserved)
+!gradle/wrapper/gradle-wrapper.jar
+
+# ====================================================================
+# Local Configuration & Machine-Specific Files
+# ====================================================================
+local.properties
+.cxx/
+.externalNativeBuild/
+
+# ====================================================================
+# Secrets, Keystores & Signing Information
+# ====================================================================
+*.jks
+*.keystore
+*.p12
+*.key
+signing.properties
+secrets.properties
+secure.properties
+keystore.properties
+.env
+.env.*
+
+# ====================================================================
+# Google Services & Firebase Credentials
+# ====================================================================
+google-services.json
+google-services-*.json
+
+# ====================================================================
+# IDE & Editor Files
+# ====================================================================
+# IntelliJ IDEA / Android Studio
+.idea/
+*.iml
+misc.xml
+deploymentTargetDropDown.xml
+render.experimental.xml
+
+# VS Code & other editors
+.vscode/
+.fleet/
+
+# ====================================================================
+# Profiling, Dumps & Logs
+# ====================================================================
+captures/
+*.hprof
+*.log
+crashlytics-build.properties
+
+# ====================================================================
+# OS-Specific Files
+# ====================================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+*.swp
