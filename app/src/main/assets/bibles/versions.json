@@ -1,0 +1,20 @@
+[
+  {
+    "id": "kjv",
+    "name": "King James Version",
+    "abbreviation": "KJV",
+    "description": "1769 Oxford edition. The classic English Bible."
+  },
+  {
+    "id": "asv",
+    "name": "American Standard Version",
+    "abbreviation": "ASV",
+    "description": "1901. A literal, word-for-word revision of the KJV."
+  },
+  {
+    "id": "nheb",
+    "name": "New Heart English Bible",
+    "abbreviation": "NHEB",
+    "description": "A modern-English update of the World English Bible. Public domain."
+  }
+]

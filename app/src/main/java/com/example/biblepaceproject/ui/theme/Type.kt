@@ -6,29 +6,26 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-// Set of Material typography styles to start with
+private val Book = FontFamily.Serif
+private val base = Typography()
+
+private fun TextStyle.serif() = copy(fontFamily = Book)
+
+// Everything is set in serif, like a printed book. bodyLarge is the scripture text, so it gets generous leading.
 val Typography = Typography(
-    bodyLarge = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.5.sp
-    )
-    /* Other default text styles to override
-    titleLarge = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.sp
-    ),
-    labelSmall = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.5.sp
-    )
-    */
+    displayLarge = base.displayLarge.serif(),
+    displayMedium = base.displayMedium.serif(),
+    displaySmall = base.displaySmall.serif(),
+    headlineLarge = base.headlineLarge.serif(),
+    headlineMedium = base.headlineMedium.serif().copy(fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp),
+    headlineSmall = base.headlineSmall.serif(),
+    titleLarge = base.titleLarge.serif().copy(fontWeight = FontWeight.SemiBold),
+    titleMedium = base.titleMedium.serif(),
+    titleSmall = base.titleSmall.serif(),
+    bodyLarge = TextStyle(fontFamily = Book, fontWeight = FontWeight.Normal, fontSize = 19.sp, lineHeight = 31.sp, letterSpacing = 0.2.sp),
+    bodyMedium = base.bodyMedium.serif(),
+    bodySmall = base.bodySmall.serif(),
+    labelLarge = base.labelLarge.serif(),
+    labelMedium = base.labelMedium.serif(),
+    labelSmall = base.labelSmall.serif(),
 )

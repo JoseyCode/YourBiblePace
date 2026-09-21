@@ -2,46 +2,41 @@ package com.example.biblepaceproject
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.activity.viewModels
+import com.example.biblepaceproject.ui.BooksScreen
+import com.example.biblepaceproject.ui.ReaderActions
+import com.example.biblepaceproject.ui.ReaderScreen
+import com.example.biblepaceproject.ui.ReaderViewModel
+import com.example.biblepaceproject.ui.Screen
 import com.example.biblepaceproject.ui.theme.BiblePaceProjectTheme
 
 class MainActivity : ComponentActivity() {
+    private val viewModel: ReaderViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             BiblePaceProjectTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                val state = viewModel.state
+                val actions = ReaderActions(
+                    onShowBooks = viewModel::showBooks,
+                    onShowReader = viewModel::showReader,
+                    onOpenChapter = viewModel::openChapter,
+                    onSelectVersion = viewModel::selectVersion,
+                    onNext = viewModel::next,
+                    onPrevious = viewModel::previous,
+                    onToggleRead = viewModel::toggleRead,
+                )
+                BackHandler(enabled = state.screen == Screen.Books) { viewModel.showReader() }
+                when (state.screen) {
+                    Screen.Reader -> ReaderScreen(state, actions)
+                    Screen.Books -> BooksScreen(state, actions)
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    BiblePaceProjectTheme {
-        Greeting("Android")
     }
 }
